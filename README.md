@@ -1,65 +1,123 @@
-# natural-language-to-llm-query-comparison
+# Natural Language to SQL — DuckDB-WASM · Anthropic · OpenAI · Google
 
-A lightweight app to compare natural-language-to-SQL generation behavior across LLM providers (Anthropic, OpenAI, and Google), then execute generated SQL with DuckDB-WASM on a Parquet dataset.
+Browser-only **NL→SQL comparison tool**: describe what you want in plain English, get back a SQL query
+and explanation from any of three LLM providers, then run it instantly against a Parquet file via
+**DuckDB-WASM** — no backend, no uploads, no server. Provider and model are switchable at any time;
+the same question to different models makes quality differences immediately visible.
 
 **[→ Portfolio demo](https://bganguly.github.io/?open=nlsql)**
 
+---
+
 ## Using the App
 
-1. The default dataset is DOL H1B LCA disclosures (Parquet) — or set any public Parquet URL as the endpoint; schema is auto-detected from metadata.
-2. Pick a provider (Anthropic / OpenAI / Google), enter a natural-language query, and click **Translate + Run**.
-3. The generated SQL executes in-browser via DuckDB-WASM — no backend needed. Switch providers to compare SQL output side by side.
+1. **Set the data source** — the default is a public H1B LCA disclosures Parquet file on S3. Paste any public Parquet URL and a table alias to use your own dataset; schema columns are auto-detected from Parquet metadata.
+2. **Configure a provider** — choose Anthropic, OpenAI, or Google. Select `predefined` key mode to use server-side keys on Vercel, or `own-key` to enter your own (stored in `localStorage`, never sent to a backend).
+3. **Pick a model** — the model dropdown is per-provider; switching models within the same provider compares quality within a family.
+4. **Pick a SQL dialect** — DuckDB (default, runs in-browser), Presto/Athena, Spark SQL, or BigQuery. The system prompt changes; only DuckDB dialect is automatically executed.
+5. **Enter a question** — type a natural-language query or pick from the grouped sample strip (`Employers`, `Wages`, `Geography`, `Trends`, `Status & Jobs`). Click **Translate + Run**.
+6. **Review** — the SQL card shows the generated query, the explanation card shows the model's reasoning, and the results card shows DuckDB execution output.
 
-## What This Repo Does
+### Sustained comparison across turns
 
-- Loads data directly from a Parquet URL (any parquet endpoint can be set — the app auto-detects schema).
-- Includes schema auto-detection from parquet metadata.
-- Translates natural language into SQL using Anthropic, OpenAI, or Google chat models.
-- Runs generated SQL locally in-browser using DuckDB-WASM.
-- Provides grouped sample queries to compare model behavior across providers.
+Each query is **stateless** — the LLM receives no history from prior queries. To compare systematically across a session:
 
-![screenshot](docs/screenshot.png)
+**Patterns that work well:**
 
-## Prerequisites
+| What you want | How to do it |
+|:--|:--|
+| Compare same question across providers | Run with Anthropic → note SQL → switch to OpenAI → run again; results stay on screen |
+| Compare models within a provider | Keep provider fixed, change model, click Translate + Run |
+| Refine a bad query | Read the explanation, then rephrase: *"top employers by count, excluding nulls in wage"* |
+| Spot dialect differences | Generate with DuckDB first (runnable), then switch to BigQuery dialect to see syntax changes |
+| Test a sparse-column edge case | Queries mentioning `country` surface a context note — the column is mostly null; use this to see how different models handle missing data |
 
-- [Node.js](https://nodejs.org/) v18+
-- API key(s) for one or more providers — having all three lets you compare side by side:
-  - [Anthropic](https://console.anthropic.com/settings/keys) (`sk-ant-...`)
-  - [OpenAI](https://platform.openai.com/api-keys) (`sk-...`)
-  - [Google AI Studio](https://aistudio.google.com/app/apikey) (`AIza...`)
-- A running Parquet endpoint — the default is an H1B dataset; any public parquet URL works
+**Practical tips:**
 
-## How To Run
+- **Explanation card is the key signal** — models that use JOIN vs CASE WHEN aggregation for the same question produce different row counts. The explanation reveals which approach was chosen.
+- **Context notes (yellow banners)** — the app recognises certain column names and surfaces data-quality warnings; these are hardcoded, not LLM-generated, so they are always accurate.
+- **LogPanel** — shows DuckDB WASM initialisation steps, Parquet fetch latency, and query execution time. Slow first queries are Parquet download; subsequent queries run against the cached in-memory file.
+- **Schema card** — shows auto-detected column names and types. If a model references a column not in the schema card, execution will fail; rephrase using exact names from the card.
+- **Dialect vs execution** — only DuckDB dialect generates runnable SQL in this app. Presto/Athena, Spark SQL, and BigQuery outputs are syntax references only.
 
-**React app (default):**
-1. `npm i && npm run dev`
-2. Open `http://localhost:5173/nl-to-sql/` in a modern browser.
-3. Set the Parquet endpoint and table alias (or use the default).
-4. Choose **Key source**: `predefined` (uses server-side keys on Vercel) or `own-key` (enter your own).
-5. Pick a provider + model + SQL dialect, enter a natural-language query, and click **Translate + Run**.
+---
 
-**Legacy HTML app (no build step):**
-1. Open `public/legacy/nl_to_sql.html` directly in a browser, or use the "Open Original HTML" button in the React app header.
+## Running
 
-## Notes
+```bash
+./scripts/deploy.sh      # Vercel deploy
+```
 
-- API calls are made directly from the browser to the selected provider.
-- The API key is persisted in `localStorage` for convenience.
-- DuckDB runs locally in-browser; no backend is required.
+Local dev (no env vars needed for own-key mode):
 
-## Future Potential Improvements
+```bash
+npm install && npm run dev
+```
 
-### Additional LLM Providers
+Open `http://localhost:5173/nl-to-sql/`.
 
-The app supports Anthropic, OpenAI, and Google. Other providers that could be integrated:
+---
 
-| Provider | Models | Notes |
-|---|---|---|
-| **Mistral** | Mistral Large, Codestral | Codestral is fine-tuned for code/SQL; OpenAI-compatible API — minimal changes needed |
-| **Groq** | Llama 3.3 70B, Mixtral | Very low latency inference; drop-in OpenAI-compatible API |
-| **xAI** | Grok 3 | OpenAI-compatible API |
-| **Meta (via Together/Fireworks)** | Llama 3.3 70B | Open weights hosted with OpenAI-compatible APIs |
+| Component | Implementation |
+|---|---|
+| **NL→SQL translation** | Single-turn LLM call; system prompt contains table name, detected column types, target SQL dialect, and instruction to respond with JSON `{ sql, explanation }` only |
+| **Anthropic path** | `POST https://api.anthropic.com/v1/messages` with `anthropic-dangerous-direct-browser-access: true` — direct browser call |
+| **OpenAI path** | `POST https://api.openai.com/v1/chat/completions` — direct browser call |
+| **Google path** | `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` — direct browser call |
+| **Proxy path** | `POST /api/proxy` Vercel Edge Function — used in `predefined` key mode so server-side keys are never sent to the browser |
+| **SQL execution** | `@duckdb/duckdb-wasm` in a Web Worker; Parquet is fetched once and cached in the worker; subsequent queries are in-memory |
+| **Schema detection** | Parquet metadata read by DuckDB on first connect; `parquetTypeToSql()` maps `INT32`/`INT64`/`FLOAT`/`DOUBLE`/`BOOLEAN` to SQL types; all others become `TEXT` |
+| **Provider models** | Anthropic: claude-opus-4-8 · claude-sonnet-5 · claude-haiku-4-5 — OpenAI: gpt-4o · gpt-4.1 · gpt-4o-mini — Google: gemini-3.5-flash · gemini-3.1-pro-preview |
+| **SQL dialects** | DuckDB (runnable) · Presto/Athena · Spark SQL · BigQuery (syntax reference only) |
+| **State persistence** | Provider, API key, model, dialect, and Parquet URL stored in `localStorage` under `nlsql_v7`; restored on reload |
+| **Tests** | Vitest + React Testing Library; unit tests for all components, hooks, and API paths |
+| **Frontend** | React 18 + Vite 5 + TypeScript 5, Tailwind CSS; no backend required |
+| **Deploy** | Vercel (frontend + Edge proxy for predefined key mode) |
 
-Providers with OpenAI-compatible APIs (Groq, Mistral, xAI, Together, Fireworks) could be added by extending the model list and changing the base URL, reusing the existing OpenAI code path.
+---
 
+## Architecture
 
+### Query flow — step by step
+
+1. **Schema detection (once per session)** — on Parquet URL change or page load, DuckDB-WASM fetches the Parquet file into the Web Worker and reads its metadata; `parquetTypeToSql()` maps raw types to SQL types shown in the Schema card.
+2. **System prompt construction** — on query submit, `api.ts` builds a system prompt containing the table name, all detected columns with types, the target SQL dialect, and an instruction to respond with JSON `{ sql, explanation }` only.
+3. **LLM call** — call goes directly to the provider API (own-key mode) or through `/api/proxy` (predefined mode); response is a raw JSON string potentially wrapped in markdown fences.
+4. **Parse & display** — JSON is stripped of fences and parsed; `sql` appears in the SQL output card, `explanation` in the explanation card.
+5. **DuckDB execution** — if dialect is DuckDB, the SQL is sent immediately to the Web Worker and executed against the cached Parquet; typed result rows appear in the results card.
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant B as Browser (React)
+    participant W as DuckDB WASM Worker
+    participant P as Parquet (S3)
+    participant LLM as LLM Provider API
+
+    Note over B,W: Once per session
+    B->>W: open connection
+    W->>P: fetch Parquet file
+    P-->>W: binary Parquet (cached in worker)
+    W-->>B: column names + types
+
+    Note over B,LLM: Per-query
+    U->>B: submit NL question
+    B->>B: build system prompt (schema + dialect)
+    B->>LLM: POST messages (own-key direct or via /api/proxy)
+    LLM-->>B: { sql, explanation }
+    B->>W: execute SQL against cached Parquet
+    W-->>B: typed result rows
+    B-->>U: SQL + results + explanation cards
+```
+
+### Key design decisions
+
+| Concern | Approach |
+|:--|:--|
+| **No backend for execution** | DuckDB-WASM runs generated SQL entirely in a browser Web Worker — no server round-trip, no data upload, no query latency beyond in-memory execution |
+| **Single-turn LLM calls** | Each NL→SQL translation is a fresh call with no prior context; the schema and dialect are re-injected every time — stateless by design |
+| **Direct browser API calls** | Own-key mode sends the API key directly to the provider from the browser; no key ever touches the app's server in this path |
+| **Schema in system prompt** | Auto-detected column names and types are injected verbatim — the model generates SQL against the real schema, not a hardcoded template |
+| **Dialect as a prompt parameter** | The SQL dialect is a sentence in the system prompt, not a post-processing step; each model generates syntactically distinct SQL per dialect |
+| **Context notes** | Hardcoded `NOTES` in `constants.ts` match query substrings and surface data-quality warnings — not LLM-generated, so always accurate regardless of model |
+| **No simultaneous multi-provider calls** | Comparison is done by switching providers and re-running, not concurrent calls — avoids race conditions in result display |
