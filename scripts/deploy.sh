@@ -71,20 +71,6 @@ echo "$DEPLOY_OUT"
 
 VERCEL_URL="https://natural-language-to-llm-query-comparison.vercel.app"
 
-if [[ -n "$VERCEL_URL" ]]; then
-  LIVE_URL="${VERCEL_URL}/nl-to-sql/"
-  PORTFOLIO_DIR="$(cd "$REPO_DIR/../.." && pwd)/portfolio"
-  LIVE_URLS_FILE="$PORTFOLIO_DIR/live-urls.js"
-
-  if [[ -f "$LIVE_URLS_FILE" ]]; then
-    sed -i '' "s|nlsqlLiteFe: '[^']*'|nlsqlLiteFe: '$LIVE_URL'|" "$LIVE_URLS_FILE"
-    echo "==> Portfolio live-urls.js updated: nlsqlLiteFe = $LIVE_URL"
-  else
-    echo "WARN: $LIVE_URLS_FILE not found — update manually."
-  fi
-else
-  echo "WARN: Could not parse Vercel URL from deploy output — update live-urls.js manually."
-fi
 
 echo ""
 echo "==> Live at $LIVE_URL"
