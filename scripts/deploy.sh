@@ -73,5 +73,5 @@ VERCEL_URL="https://natural-language-to-llm-query-comparison.vercel.app"
 
 
 echo ""
-echo "==> Live at $LIVE_URL"
+echo "==> Live at $VERCEL_URL"
 echo "    To suspend: bash $REPO_DIR/infra-down.sh"
