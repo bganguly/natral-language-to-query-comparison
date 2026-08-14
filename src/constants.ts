@@ -1,4 +1,4 @@
-export const STORAGE_KEY = 'nlsql_v6';
+export const STORAGE_KEY = 'nlsql_v7';
 export const LEGACY_STORAGE_KEY = 'nlsql_v5';
 
 export const ADJS = ['amber', 'brisk', 'coral', 'dusty', 'ember', 'frost', 'gilded', 'hazy', 'ivory', 'jade'];
@@ -14,6 +14,8 @@ export const MODELS: { anthropic: string[]; openai: string[]; google: string[] }
   ],
   openai: ['gpt-4o', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o-mini', 'gpt-4-turbo'],
   google: [
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
     'gemini-3.5-flash',
     'gemini-3.1-pro-preview',
     'gemini-3.1-flash-lite',
