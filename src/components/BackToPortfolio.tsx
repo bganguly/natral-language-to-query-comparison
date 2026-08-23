@@ -17,7 +17,7 @@ export default function BackToPortfolio() {
       onClick={handleBack}
       style={{
         position: 'fixed',
-        top: '12px',
+        top: '6px',
         left: '12px',
         zIndex: 50,
         display: 'inline-flex',
