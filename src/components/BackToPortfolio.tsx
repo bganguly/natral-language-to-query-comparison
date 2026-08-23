@@ -1,7 +1,7 @@
 export default function BackToPortfolio() {
   function handleBack(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
-    const url = 'https://bganguly.github.io/#nlsql';
+    const url = 'https://bganguly.github.io/#nl_to_sql';
     try {
       if (window.opener && !window.opener.closed) {
         window.opener.location.href = url;
@@ -13,7 +13,7 @@ export default function BackToPortfolio() {
   }
   return (
     <a
-      href="https://bganguly.github.io/#nlsql"
+      href="https://bganguly.github.io/#nl_to_sql"
       onClick={handleBack}
       style={{
         position: 'fixed',
