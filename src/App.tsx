@@ -270,6 +270,7 @@ const App = () => {
   // ── Layout ────────────────────────────────────────────────────────────────
   return (
     <main className="app">
+      <BackToPortfolio />
       <TopBar duckReady={duckReady} />
       {suspended && (
         <div style={{ background: 'var(--c-err, #c0392b)', color: '#fff', padding: '0.75rem 1.25rem', textAlign: 'center', fontSize: '0.9rem' }}>
