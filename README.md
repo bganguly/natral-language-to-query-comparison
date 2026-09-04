@@ -5,7 +5,16 @@ and explanation from any of three LLM providers, then run it instantly against a
 **DuckDB-WASM** — no backend, no uploads, no server. Provider and model are switchable at any time;
 the same question to different models makes quality differences immediately visible.
 
-**[→ Portfolio demo](https://bganguly.github.io/#nl_to_sql)**
+---
+
+## Live Service
+
+| Endpoint | URL |
+|---|---|
+| **App** | https://natural-language-to-llm-query-comparison.vercel.app/nl-to-sql/ |
+| **Portfolio demo** | https://bganguly.github.io/#nl_to_sql |
+
+> Browser-only via DuckDB-WASM — no backend or server required.
 
 ---
 
