@@ -97,22 +97,6 @@ sequenceDiagram
 | **Context notes** | Hardcoded `NOTES` in `constants.ts` match query substrings and surface data-quality warnings — not LLM-generated, so always accurate regardless of model |
 | **No simultaneous multi-provider calls** | Comparison is done by switching providers and re-running, not concurrent calls — avoids race conditions in result display |
 
-## Deployment / Running
-
-```bash
-./scripts/deploy.sh      # Vercel deploy
-```
-
-Local dev (no env vars needed for own-key mode):
-
-```bash
-npm install && npm run dev
-```
-
-Open `http://localhost:5173/nl-to-sql/`.
-
----
-
 ## Stack
 
 | Component | Implementation |
@@ -132,3 +116,19 @@ Open `http://localhost:5173/nl-to-sql/`.
 | **Deploy** | Vercel (frontend + Edge proxy for predefined key mode) |
 
 ---
+## Deployment / Running
+
+```bash
+./scripts/deploy.sh      # Vercel deploy
+```
+
+Local dev (no env vars needed for own-key mode):
+
+```bash
+npm install && npm run dev
+```
+
+Open `http://localhost:5173/nl-to-sql/`.
+
+---
+
