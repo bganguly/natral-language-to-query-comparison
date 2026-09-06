@@ -51,40 +51,6 @@ Each query is **stateless** — the LLM receives no history from prior queries. 
 
 ---
 
-## Running
-
-```bash
-./scripts/deploy.sh      # Vercel deploy
-```
-
-Local dev (no env vars needed for own-key mode):
-
-```bash
-npm install && npm run dev
-```
-
-Open `http://localhost:5173/nl-to-sql/`.
-
----
-
-| Component | Implementation |
-|---|---|
-| **NL→SQL translation** | Single-turn LLM call; system prompt contains table name, detected column types, target SQL dialect, and instruction to respond with JSON `{ sql, explanation }` only |
-| **Anthropic path** | `POST https://api.anthropic.com/v1/messages` with `anthropic-dangerous-direct-browser-access: true` — direct browser call |
-| **OpenAI path** | `POST https://api.openai.com/v1/chat/completions` — direct browser call |
-| **Google path** | `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` — direct browser call |
-| **Proxy path** | `POST /api/proxy` Vercel Edge Function — used in `predefined` key mode so server-side keys are never sent to the browser |
-| **SQL execution** | `@duckdb/duckdb-wasm` in a Web Worker; Parquet is fetched once and cached in the worker; subsequent queries are in-memory |
-| **Schema detection** | Parquet metadata read by DuckDB on first connect; `parquetTypeToSql()` maps `INT32`/`INT64`/`FLOAT`/`DOUBLE`/`BOOLEAN` to SQL types; all others become `TEXT` |
-| **Provider models** | Anthropic: claude-opus-4-8 · claude-sonnet-5 · claude-haiku-4-5 — OpenAI: gpt-4o · gpt-4.1 · gpt-4o-mini — Google: gemini-3.5-flash · gemini-3.1-pro-preview |
-| **SQL dialects** | DuckDB (runnable) · Presto/Athena · Spark SQL · BigQuery (syntax reference only) |
-| **State persistence** | Provider, API key, model, dialect, and Parquet URL stored in `localStorage` under `nlsql_v7`; restored on reload |
-| **Tests** | Vitest + React Testing Library; unit tests for all components, hooks, and API paths |
-| **Frontend** | React 18 + Vite 5 + TypeScript 5, Tailwind CSS; no backend required |
-| **Deploy** | Vercel (frontend + Edge proxy for predefined key mode) |
-
----
-
 ## Architecture
 
 ### Query flow — step by step
@@ -130,3 +96,37 @@ sequenceDiagram
 | **Dialect as a prompt parameter** | The SQL dialect is a sentence in the system prompt, not a post-processing step; each model generates syntactically distinct SQL per dialect |
 | **Context notes** | Hardcoded `NOTES` in `constants.ts` match query substrings and surface data-quality warnings — not LLM-generated, so always accurate regardless of model |
 | **No simultaneous multi-provider calls** | Comparison is done by switching providers and re-running, not concurrent calls — avoids race conditions in result display |
+
+## Running
+
+```bash
+./scripts/deploy.sh      # Vercel deploy
+```
+
+Local dev (no env vars needed for own-key mode):
+
+```bash
+npm install && npm run dev
+```
+
+Open `http://localhost:5173/nl-to-sql/`.
+
+---
+
+| Component | Implementation |
+|---|---|
+| **NL→SQL translation** | Single-turn LLM call; system prompt contains table name, detected column types, target SQL dialect, and instruction to respond with JSON `{ sql, explanation }` only |
+| **Anthropic path** | `POST https://api.anthropic.com/v1/messages` with `anthropic-dangerous-direct-browser-access: true` — direct browser call |
+| **OpenAI path** | `POST https://api.openai.com/v1/chat/completions` — direct browser call |
+| **Google path** | `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` — direct browser call |
+| **Proxy path** | `POST /api/proxy` Vercel Edge Function — used in `predefined` key mode so server-side keys are never sent to the browser |
+| **SQL execution** | `@duckdb/duckdb-wasm` in a Web Worker; Parquet is fetched once and cached in the worker; subsequent queries are in-memory |
+| **Schema detection** | Parquet metadata read by DuckDB on first connect; `parquetTypeToSql()` maps `INT32`/`INT64`/`FLOAT`/`DOUBLE`/`BOOLEAN` to SQL types; all others become `TEXT` |
+| **Provider models** | Anthropic: claude-opus-4-8 · claude-sonnet-5 · claude-haiku-4-5 — OpenAI: gpt-4o · gpt-4.1 · gpt-4o-mini — Google: gemini-3.5-flash · gemini-3.1-pro-preview |
+| **SQL dialects** | DuckDB (runnable) · Presto/Athena · Spark SQL · BigQuery (syntax reference only) |
+| **State persistence** | Provider, API key, model, dialect, and Parquet URL stored in `localStorage` under `nlsql_v7`; restored on reload |
+| **Tests** | Vitest + React Testing Library; unit tests for all components, hooks, and API paths |
+| **Frontend** | React 18 + Vite 5 + TypeScript 5, Tailwind CSS; no backend required |
+| **Deploy** | Vercel (frontend + Edge proxy for predefined key mode) |
+
+---
